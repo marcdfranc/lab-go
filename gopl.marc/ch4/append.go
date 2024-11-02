@@ -1,0 +1,13 @@
+// Testando a função embutida append para concatenar um array a uma fatia
+package main
+
+import "fmt"
+
+func main() {
+	var runes []rune
+
+	for _, r := range "Hello, 世界" {
+		runes = append(runes, r)
+	}
+	fmt.Printf("%q\n", runes)
+}
