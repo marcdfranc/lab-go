@@ -1,4 +1,4 @@
-// gera animações gif de figuras de lissajous aleatórias
+// gera animações gif de figuras de lissajous58 aleatórias
 
 package main
 
@@ -13,19 +13,18 @@ import (
 	"time"
 )
 
-var palette = []color.Color{color.White, color.Black}
+var palette2 = []color.Color{color.White, color.Black}
 
 const (
-	whiteIndex = 0
-	blackIndex = 1
+	blackIndex2 = 1
 )
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
-	lissajous(os.Stdout)
+	lissajous2(os.Stdout)
 }
 
-func lissajous(out io.Writer) {
+func lissajous2(out io.Writer) {
 	const (
 		cycles  = 5     // Numero de ocilações completas do oscilador
 		res     = 0.001 // resolução angular
@@ -42,12 +41,12 @@ func lissajous(out io.Writer) {
 
 	for i := 0; i < nFrames; i++ {
 		rect := image.Rect(0, 0, 2*size+1, 2*size+1)
-		img := image.NewPaletted(rect, palette)
+		img := image.NewPaletted(rect, palette2)
 		for t := 0.0; t < cycles*2*math.Pi; t += res {
 			x := math.Sin(t)
 			y := math.Sin(t*freq + phase)
 
-			img.SetColorIndex(size+int(x*size+0.5), size+int(y*size+0.5), blackIndex)
+			img.SetColorIndex(size+int(x*size+0.5), size+int(y*size+0.5), blackIndex2)
 		}
 		phase += 0.1
 		anim.Delay = append(anim.Delay, delay)
