@@ -1,21 +1,41 @@
 package logger
 
-import (
-	"fmt"
-	"os"
-	"time"
-)
+type ILogger interface {
+	Log(level LogLevel, message string, errors ...error)
+}
 
-func (l *Logger) log(level LogLevel, message string, errors ...error) {
-	if level == UNDEFINED {
-		fmt.Println(message)
-		return
+type Logger struct {
+	output IOutput
+	Name   string
+}
+
+func NewLogger(output IOutput, name string) *Logger {
+	return &Logger{
+		output: output,
+		Name:   name,
 	}
-	fmt.Printf("[%s] Level: %s	Time: %v	Msg: %s\n", l.Name, level, time.Now(), message)
-	for i, err := range errors {
-		fmt.Printf("Error (%d): %v\n", i, err)
-	}
-	if errors != nil && level == FATAL {
-		os.Exit(1)
-	}
+}
+
+func (l *Logger) Log(level LogLevel, message string, errors ...error) {
+	l.output.Log(level, l.Name, message, errors...)
+}
+
+func (l *Logger) LogInfo(message string) {
+	l.Log(INFO, message)
+}
+
+func (l *Logger) LogDebug(message string) {
+	l.Log(DEBUG, message)
+}
+
+func (l *Logger) LogWarning(message string) {
+	l.Log(WARN, message)
+}
+
+func (l *Logger) LogError(message string, errors ...error) {
+	l.Log(ERROR, message, errors...)
+}
+
+func (l *Logger) LogFatal(message string, errors ...error) {
+	l.Log(FATAL, message, errors...)
 }

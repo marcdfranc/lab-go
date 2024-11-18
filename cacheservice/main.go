@@ -1,20 +1,24 @@
+// main.go
 package main
 
 import (
-	"cacheservice/api"
+	"cacheservice/logger"
+	"log"
+	"net/http"
 )
 
-// var _logger = &logger.Logger{Name: "main.go"}
-
 func main() {
-	/*_logger.Log("My First event")
-	_logger.LogInfo("My First info event")
-	_logger.LogDebug("My First Debug event")
-	_logger.LogWarning("My First Warn event")
-	_logger.LogError("My First Error event", fmt.Errorf("could not process"))
-	_logger.LogError("My First Error event", fmt.Errorf("Null Pointer"))
-	_logger.LogError("My First Error event", fmt.Errorf("I don't know"))
-	_logger.LogFatal("My First Fatal event", fmt.Errorf("Critical failure"))*/
+	// Injeção de dependência do ConsoleOutput
+	output := &logger.ConsoleOutput{}
+	logInstance := logger.NewLogger(output, "main")
 
-	api.StartServer()
+	// Uso do Logger na aplicação
+	logInstance.LogInfo("Iniciando servidor...")
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		logInstance.LogInfo("Recebida requisição para /")
+		w.Write([]byte("Hello, World!"))
+	})
+
+	log.Fatal(http.ListenAndServe("localhost:8000", nil))
 }
