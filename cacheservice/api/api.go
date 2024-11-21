@@ -2,7 +2,7 @@ package api
 
 import (
 	"cacheservice/domain"
-	"cacheservice/logger"
+	"cacheservice/logging"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-var _logger = &logger.Logger{Name: "api.go"}
+var _logger = &logging.Logger{Name: "api.go"}
 
 var session = domain.UserSession{
 	Id:       "8bceb58a-1f07-41af-94a8-73d0fa03f8db",

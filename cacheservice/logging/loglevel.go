@@ -1,5 +1,5 @@
 // loglevel.go
-package logger
+package logging
 
 type LogLevel int
 
