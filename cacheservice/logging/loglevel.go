@@ -4,12 +4,12 @@ package logging
 type LogLevel int
 
 const (
-	INFO LogLevel = iota
+	UNDEFINED LogLevel = iota
+	INFO
 	DEBUG
 	WARN
 	ERROR
 	FATAL
-	UNDEFINED
 )
 
 func (l LogLevel) String() string {

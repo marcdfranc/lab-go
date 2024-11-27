@@ -1,14 +1,3 @@
-/*
-	move formater to log
-ok	remove fatal
-	parameters should be interfaces
-ok	move log implementation to private
-	use FMT, errorFormat and FPrintf
-ok	Remove the weberver
-	ordenate the imports (default, external packages, my local packages)
-ok	change the name of the Logger to Logging and the loggerIstance to logging
-*/
-
 package logging
 
 import (
@@ -17,7 +6,7 @@ import (
 	"time"
 )
 
-type Logger interface {
+type Logging interface {
 	LogInfo(message string)
 	LogDebug(message string)
 	LogWarning(message string)
@@ -28,54 +17,52 @@ type Logger interface {
 	LogErrorf(formatter string, data ...interface{})
 }
 
-type logger struct {
+type Logger struct {
 	output io.Writer
-	source string
 }
 
-func NewLogger(output io.Writer, source string) Logger {
-	return &logger{
+func NewLogger(output io.Writer) *Logger {
+	return &Logger{
 		output: output,
-		source: source,
 	}
 }
 
-func (l *logger) log(level LogLevel, template string, data ...any) {
-	template = "[%s] Source: %s, Time: %s, " + template + "\n"
-	args := []any{level.String(), l.source, time.Now().UTC().Format(time.RFC3339)}
-	args = append(args, data...)
-	logMessage := fmt.Sprintf(template, args...)
-	l.output.Write([]byte(logMessage))
+func (l *Logger) log(level LogLevel, template string, data ...any) {
+	template = fmt.Sprintf("[%s] Time: %s, %s \n", level, time.Now().UTC().Format(time.RFC3339), template)
+	_, err := fmt.Fprintf(l.output, template, data...)
+	if err != nil {
+		panic(err)
+	}
 }
 
-func (l *logger) LogInfo(message string) {
+func (l *Logger) LogInfo(message string) {
 	l.log(INFO, "Msg: %s ", message)
 }
 
-func (l *logger) LogDebug(message string) {
+func (l *Logger) LogDebug(message string) {
 	l.log(DEBUG, "Msg: %s ", message)
 }
 
-func (l *logger) LogWarning(message string) {
+func (l *Logger) LogWarning(message string) {
 	l.log(WARN, "Msg: %s ", message)
 }
 
-func (l *logger) LogError(message string) {
+func (l *Logger) LogError(message string) {
 	l.log(ERROR, "Msg: %s ", message)
 }
 
-func (l *logger) LogInfof(formatter string, data ...interface{}) {
+func (l *Logger) LogInfof(formatter string, data ...interface{}) {
 	l.log(INFO, formatter, data...)
 }
 
-func (l *logger) LogDebugf(formatter string, data ...interface{}) {
+func (l *Logger) LogDebugf(formatter string, data ...interface{}) {
 	l.log(DEBUG, formatter, data)
 }
 
-func (l *logger) LogWarningf(formatter string, data ...interface{}) {
+func (l *Logger) LogWarningf(formatter string, data ...interface{}) {
 	l.log(WARN, formatter, data)
 }
 
-func (l *logger) LogErrorf(formatter string, data ...interface{}) {
+func (l *Logger) LogErrorf(formatter string, data ...interface{}) {
 	l.log(ERROR, formatter, data)
 }

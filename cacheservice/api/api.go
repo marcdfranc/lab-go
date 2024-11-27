@@ -2,15 +2,13 @@ package api
 
 import (
 	"cacheservice/domain"
-	"cacheservice/logging"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 )
-
-var _logger = &logging.Logger{Name: "api.go"}
 
 var session = domain.UserSession{
 	Id:       "8bceb58a-1f07-41af-94a8-73d0fa03f8db",
@@ -27,8 +25,8 @@ var session = domain.UserSession{
 func StartServer() {
 	http.HandleFunc("/api/create", create)
 	http.HandleFunc("/api/", index)
-	_logger.Log("Server Runnning at: http://localhost:8000")
-	_logger.LogFatal("", http.ListenAndServe("localhost:8000", nil))
+	fmt.Println("Server Runnning at: http://localhost:8000")
+	log.Fatal(http.ListenAndServe("localhost:8000", nil))
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +65,6 @@ func create(w http.ResponseWriter, r *http.Request) {
 	// Sucesso
 	w.WriteHeader(http.StatusCreated)
 	message := fmt.Sprintf("Sessão criada com sucesso: %+v\n", session)
-	_logger.LogInfo(message)
+	fmt.Println(message)
 	fmt.Fprintln(w, message)
 }
