@@ -2,40 +2,28 @@
 package main
 
 import (
+	"cacheservice/handlers"
 	"cacheservice/httpserv"
 	"cacheservice/logging"
-	"fmt"
-	"net/http"
 	"os"
 )
 
 func main() {
 	logger := logging.NewLogger(os.Stdout)
 
-	num := 2.5
-	integer := 77
+	server := httpserv.NewHttpServer("localhost:8000", logger)
+	handler := handlers.NewKeyValueHandler(logger, server)
 
-	type someObj struct {
-		firstName string
-		age       int
-	}
+	server.HandleGet("/get", handler.GetHandler)
+	server.HandleGet("/getp/{id}", handler.GetWithParamHandler)
+	server.HandleHead("/head", handler.HeadHandler)
+	server.HandlePost("/post", handler.PostHandler)
+	server.HandlePut("/put", handler.PutHandler)
+	server.HandlePatch("/patch", handler.PatchHandler)
+	server.HandleDelete("/delete", handler.DeleteHandler)
+	server.HandleConnect("/connect", handler.ConnectHandler)
+	server.HandleOptions("/options", handler.OptionsHandler)
+	server.HandleTrace("/trace", handler.TraceHandler)
 
-	obj := someObj{"Maria", 38}
-
-	logger.LogInfof("decimal: %f, int: %d, obj: %v", num, integer, obj)
-
-	serv := httpserv.NewHttpserv("localhost:8080", logger)
-
-	serv.HandleFunc("/", idx)
-	serv.HandleFunc("/getsome", getParam)
-
-	serv.Start()
-}
-
-func idx(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "index page")
-}
-
-func getParam(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "request: %v", r)
+	server.Start()
 }
