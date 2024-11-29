@@ -13,3 +13,8 @@ type UserSession struct {
 	Expiration   string
 	RequestCount int
 }
+
+type Keyvalue struct {
+	Key   string
+	Value string
+}

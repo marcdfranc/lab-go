@@ -8,21 +8,26 @@ import (
 	"regexp"
 )
 
-// Route representa uma única rota
-type Route struct {
-	pattern       *regexp.Regexp
-	handler       http.HandlerFunc
-	allowedMethod string
+type Server interface {
+	Start()
+	Param(req *http.Request, name string) string
+	Query(req *http.Request, name string) string
 }
 
-// HttpServer é um servidor HTTP personalizado
+// Route representa uma única rota.
+type Route struct {
+	pattern  *regexp.Regexp
+	handlers map[string]http.HandlerFunc
+}
+
+// HttpServer representa um servidor HTTP personalizado.
 type HttpServer struct {
 	Host   string
 	routes []*Route
 	logger *logging.Logger
 }
 
-// NewHttpServer cria uma nova instância do HttpServer
+// NewHttpServer cria uma nova instância de HttpServer.
 func NewHttpServer(host string, logger *logging.Logger) *HttpServer {
 	return &HttpServer{
 		Host:   host,
@@ -30,20 +35,18 @@ func NewHttpServer(host string, logger *logging.Logger) *HttpServer {
 	}
 }
 
-// Start inicia o servidor HTTP
+// Start inicia o servidor HTTP.
 func (h *HttpServer) Start() {
-	for _, route := range h.routes {
-		http.HandleFunc(route.pattern.String(), route.handler)
-	}
 	h.logger.LogInfof("The server is running at http://%s", h.Host)
 	http.ListenAndServe(h.Host, h)
 }
 
-// ServeHTTP implementa a Interface
+// ServeHTTP implementa a interface Handler do http.
 func (h *HttpServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	for _, route := range h.routes {
 		if matches := route.pattern.FindStringSubmatch(req.URL.Path); matches != nil {
-			if route.allowedMethod != req.Method {
+			handler, exists := route.handlers[req.Method]
+			if !exists {
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
@@ -57,46 +60,40 @@ func (h *HttpServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 			ctx := context.WithValue(req.Context(), "params", params)
 			req = req.WithContext(ctx)
-			route.handler.ServeHTTP(w, req)
+			handler.ServeHTTP(w, req)
 			return
 		}
 	}
 	http.NotFound(w, req)
 }
 
-// handleFunc adiciona uma nova rota ao servidor HTTP
-func (h *HttpServer) handleFunc(allowedMethod, pattern string, handlerFunc http.HandlerFunc) error {
-	if h.patternExists(pattern) {
-		return errors.New("pattern already exists")
-	}
+// Handle adiciona uma nova rota ao servidor HTTP com suporte a múltiplos métodos.
+func (h *HttpServer) Handle(pattern string, method string, handlerFunc http.HandlerFunc) error {
 	regexpattern, err := regexp.Compile("^" + h.convertPattern(pattern) + "$")
 	if err != nil {
 		return errors.New("invalid pattern")
 	}
+
+	for _, route := range h.routes {
+		if route.pattern.String() == regexpattern.String() {
+			route.handlers[method] = handlerFunc
+			return nil
+		}
+	}
+
 	h.routes = append(h.routes, &Route{
-		pattern:       regexpattern,
-		handler:       handlerFunc,
-		allowedMethod: allowedMethod,
+		pattern:  regexpattern,
+		handlers: map[string]http.HandlerFunc{method: handlerFunc},
 	})
 	return nil
 }
 
 func (h *HttpServer) convertPattern(pattern string) string {
-	re := regexp.MustCompile(`\{(\w+)}`)
+	re := regexp.MustCompile(`\{(\w+)\}`)
 	return re.ReplaceAllString(pattern, `(?P<$1>[^/]+)`)
 }
 
-// patternExists verifica se o padrão já está registrado
-func (h *HttpServer) patternExists(pattern string) bool {
-	for _, route := range h.routes {
-		if route.pattern.String() == pattern {
-			return true
-		}
-	}
-	return false
-}
-
-// Param retorna o valor de um parâmetro da URL
+// Param retorna o valor de um parâmetro da URL.
 func (h *HttpServer) Param(req *http.Request, name string) string {
 	params, ok := req.Context().Value("params").(map[string]string)
 	if !ok {
@@ -105,45 +102,53 @@ func (h *HttpServer) Param(req *http.Request, name string) string {
 	return params[name]
 }
 
-// Query retorna o valor de um parâmetro de consulta
+// Query retorna o valor de um parâmetro de consulta.
 func (h *HttpServer) Query(req *http.Request, name string) string {
 	return req.URL.Query().Get(name)
 }
 
-// Implementação dos métodos da interface HandleMethods
+// patternExists verifica se o padrão já está registrado.
+func (h *HttpServer) patternExists(pattern *regexp.Regexp) bool {
+	for _, route := range h.routes {
+		if route.pattern.String() == pattern.String() {
+			return true
+		}
+	}
+	return false
+}
 
 func (h *HttpServer) HandleGet(pattern string, handlerFunc http.HandlerFunc) error {
-	return h.handleFunc(http.MethodGet, pattern, handlerFunc)
+	return h.Handle(pattern, http.MethodGet, handlerFunc)
 }
 
 func (h *HttpServer) HandleHead(pattern string, handlerFunc http.HandlerFunc) error {
-	return h.handleFunc(http.MethodHead, pattern, handlerFunc)
+	return h.Handle(pattern, http.MethodHead, handlerFunc)
 }
 
 func (h *HttpServer) HandlePost(pattern string, handlerFunc http.HandlerFunc) error {
-	return h.handleFunc(http.MethodPost, pattern, handlerFunc)
+	return h.Handle(pattern, http.MethodPost, handlerFunc)
 }
 
 func (h *HttpServer) HandlePut(pattern string, handlerFunc http.HandlerFunc) error {
-	return h.handleFunc(http.MethodPut, pattern, handlerFunc)
+	return h.Handle(pattern, http.MethodPut, handlerFunc)
 }
 
 func (h *HttpServer) HandlePatch(pattern string, handlerFunc http.HandlerFunc) error {
-	return h.handleFunc(http.MethodPatch, pattern, handlerFunc)
+	return h.Handle(pattern, http.MethodPatch, handlerFunc)
 }
 
 func (h *HttpServer) HandleDelete(pattern string, handlerFunc http.HandlerFunc) error {
-	return h.handleFunc(http.MethodDelete, pattern, handlerFunc)
+	return h.Handle(pattern, http.MethodDelete, handlerFunc)
 }
 
 func (h *HttpServer) HandleConnect(pattern string, handlerFunc http.HandlerFunc) error {
-	return h.handleFunc(http.MethodConnect, pattern, handlerFunc)
+	return h.Handle(pattern, http.MethodConnect, handlerFunc)
 }
 
 func (h *HttpServer) HandleOptions(pattern string, handlerFunc http.HandlerFunc) error {
-	return h.handleFunc(http.MethodOptions, pattern, handlerFunc)
+	return h.Handle(pattern, http.MethodOptions, handlerFunc)
 }
 
 func (h *HttpServer) HandleTrace(pattern string, handlerFunc http.HandlerFunc) error {
-	return h.handleFunc(http.MethodTrace, pattern, handlerFunc)
+	return h.Handle(pattern, http.MethodTrace, handlerFunc)
 }

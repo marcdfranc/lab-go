@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	"cacheservice/domain"
 	"cacheservice/httpserv"
 	"cacheservice/logging"
+	"encoding/json"
+	"regexp"
+
 	"fmt"
 	"net/http"
 )
@@ -10,14 +14,9 @@ import (
 type HandlerInterface interface {
 	GetHandler(w http.ResponseWriter, r *http.Request)
 	GetWithParamHandler(w http.ResponseWriter, r *http.Request)
-	HeadHandler(w http.ResponseWriter, r *http.Request)
 	PostHandler(w http.ResponseWriter, r *http.Request)
 	PutHandler(w http.ResponseWriter, r *http.Request)
-	PatchHandler(w http.ResponseWriter, r *http.Request)
 	DeleteHandler(w http.ResponseWriter, r *http.Request)
-	ConnectHandler(w http.ResponseWriter, r *http.Request)
-	OptionsHandler(w http.ResponseWriter, r *http.Request)
-	TraceHandler(w http.ResponseWriter, r *http.Request)
 }
 
 type KeyValueHandler struct {
@@ -33,42 +32,65 @@ func NewKeyValueHandler(logger *logging.Logger, httpserv *httpserv.HttpServer) *
 }
 
 func (k *KeyValueHandler) GetHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "GET request received. Query param 'name': %s\n", k.httpserv.Query(r, "name"))
+	fmt.Fprintf(w, "GET request received. Query param 'Value': %s\n", k.httpserv.Query(r, "name"))
 }
 
 func (k *KeyValueHandler) GetWithParamHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "GET request received. Query param 'name': %s\n", k.httpserv.Param(r, "id"))
-}
-
-func (k *KeyValueHandler) HeadHandler(w http.ResponseWriter, r *http.Request) {
-	// HEAD requests typically do not have a response body
-	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "GET request received. Variable 'id': %s\n", k.httpserv.Param(r, "id"))
 }
 
 func (k *KeyValueHandler) PostHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "POST request received.")
+
+	var kv domain.Keyvalue
+
+	if err := json.NewDecoder(r.Body).Decode(&kv); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	if !isValidGUID(kv.Key) {
+		http.Error(w, "Invalid GUID", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Fprintf(w, "POST request received. Key: %s, Value: %s\n", kv.Key, kv.Value)
 }
 
 func (k *KeyValueHandler) PutHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "PUT request received.")
-}
+	id := k.httpserv.Param(r, "id")
 
-func (k *KeyValueHandler) PatchHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "PATCH request received.")
+	if !isValidGUID(id) {
+		http.NotFound(w, r)
+		return
+	}
+
+	var kv domain.Keyvalue
+
+	if err := json.NewDecoder(r.Body).Decode(&kv); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	if !isValidGUID(kv.Key) {
+		http.Error(w, "Invalid GUID", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Fprintf(w, "PUT request received. Key: %s, Value: %s\n", kv.Key, kv.Value)
 }
 
 func (k *KeyValueHandler) DeleteHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "DELETE request received.")
+	id := k.httpserv.Param(r, "id")
+
+	if !isValidGUID(id) {
+		http.NotFound(w, r)
+		return
+	}
+
+	fmt.Fprintf(w, "DELETE request received. Variable 'id': %s\n", k.httpserv.Param(r, "id"))
 }
 
-func (k *KeyValueHandler) ConnectHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "CONNECT request received.")
-}
-
-func (k *KeyValueHandler) OptionsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Allow", "GET, POST, PUT, DELETE, OPTIONS")
-}
-
-func (k *KeyValueHandler) TraceHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "TRACE request received.")
+func isValidGUID(guid string) bool {
+	re := regexp.MustCompile(`^[a-fA-F0-9]{8}\-[a-fA-F0-9]{4}\-[a-fA-F0-9]{4}\-[a-fA-F0-9]{4}\-[a-fA-F0-9]{12}$`)
+	return re.MatchString(guid)
 }

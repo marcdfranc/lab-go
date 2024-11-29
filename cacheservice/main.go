@@ -14,16 +14,12 @@ func main() {
 	server := httpserv.NewHttpServer("localhost:8000", logger)
 	handler := handlers.NewKeyValueHandler(logger, server)
 
-	server.HandleGet("/get", handler.GetHandler)
-	server.HandleGet("/getp/{id}", handler.GetWithParamHandler)
-	server.HandleHead("/head", handler.HeadHandler)
-	server.HandlePost("/post", handler.PostHandler)
-	server.HandlePut("/put", handler.PutHandler)
-	server.HandlePatch("/patch", handler.PatchHandler)
-	server.HandleDelete("/delete", handler.DeleteHandler)
-	server.HandleConnect("/connect", handler.ConnectHandler)
-	server.HandleOptions("/options", handler.OptionsHandler)
-	server.HandleTrace("/trace", handler.TraceHandler)
+	server.HandleGet("/api/keyvalue", handler.GetHandler)
+	server.HandlePost("/api/keyvalue", handler.PostHandler)
+
+	server.HandleGet("/api/keyvalue/{id}", handler.GetWithParamHandler)
+	server.HandlePut("/api/keyvalue/{id}", handler.PutHandler)
+	server.HandleDelete("/api/keyvalue/{id}", handler.DeleteHandler)
 
 	server.Start()
 }
